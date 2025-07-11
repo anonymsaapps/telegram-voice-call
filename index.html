@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anonymous Voice Call</title>
+  <style>
+    /* CSS untuk tampilan dasar */
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #status { margin-top: 20px; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h1>Anonymous Voice Call</h1>
+  <div id="status">Menunggu pasangan anonim...</div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+  <script>
+    const socket = new WebSocket('wss://your-websocket-server-url');  // URL WebSocket untuk signaling
+    const statusDiv = document.getElementById('status');
+
+    let localStream;
+    let peerConnection;
+    const iceServers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+    // Inisialisasi media lokal (mikrofon)
+    navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+      .then(stream => {
+        localStream = stream;
+        statusDiv.textContent = "Menunggu pasangan anonim...";
+      })
+      .catch(err => {
+        console.error('Error accessing media devices.', err);
+      });
+
+    socket.onmessage = (message) => {
+      const data = JSON.parse(message.data);
+      if (data.sdp) {
+        handleSdp(data.sdp);
+      } else if (data.iceCandidate) {
+        handleIceCandidate(data.iceCandidate);
+      }
+    };
+
+    // Mengirim pesan SDP (offer/answer) ke server WebSocket
+    function sendSdp(sdp) {
+      socket.send(JSON.stringify({ sdp }));
+    }
+
+    // Menangani SDP (offer/answer)
+    function handleSdp(sdp) {
+      if (!peerConnection) {
+        peerConnection = new RTCPeerConnection(iceServers);
+        peerConnection.addStream(localStream);
+        peerConnection.onaddstream = (event) => {
+          // Panggilan suara otomatis akan terjadi setelah koneksi
+          statusDiv.textContent = 'Panggilan suara sedang berlangsung...';
+        };
+      }
+
+      if (sdp.type === 'offer') {
+        peerConnection.setRemoteDescription(new RTCSessionDescription(sdp));
+        peerConnection.createAnswer().then((answer) => {
+          peerConnection.setLocalDescription(answer);
+          sendSdp(answer);
+        });
+      } else if (sdp.type === 'answer') {
+        peerConnection.setRemoteDescription(new RTCSessionDescription(sdp));
+      }
+    }
+
+    // Menangani IceCandidate
+    function handleIceCandidate(candidate) {
+      peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+    }
+  </script>
+</body>
+</html>
