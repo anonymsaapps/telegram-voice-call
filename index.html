@@ -5,71 +5,123 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Anonymous Voice Call</title>
   <style>
-    /* CSS untuk tampilan dasar */
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    #status { margin-top: 20px; font-size: 18px; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 2em;
+    }
+    #status {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+    select, button {
+      padding: 10px;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
   <h1>Anonymous Voice Call</h1>
-  <div id="status">Menunggu pasangan anonim...</div>
+
+  <label for="language">Choose your language:</label>
+  <select id="language">
+    <option value="en">English</option>
+    <option value="id">Indonesian</option>
+    <option value="es">Spanish</option>
+    <option value="ru">Russian</option>
+    <option value="hi">Hindi</option>
+  </select>
+  <br><br>
+
+  <button id="startCall">Start Anonymous Call</button>
+
+  <div id="status">Waiting for anonymous partner...</div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
   <script>
-    const socket = new WebSocket('wss://your-websocket-server-url');  // URL WebSocket untuk signaling
+    const socket = new WebSocket('wss://your-websocket-server-url');  // Ganti dengan URL WebSocket server kamu
     const statusDiv = document.getElementById('status');
+    const languageSelect = document.getElementById('language');
+    const startButton = document.getElementById('startCall');
 
     let localStream;
     let peerConnection;
     const iceServers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
+    let selectedLanguage = 'en'; // Default language is English
+
     // Inisialisasi media lokal (mikrofon)
     navigator.mediaDevices.getUserMedia({ audio: true, video: false })
       .then(stream => {
         localStream = stream;
-        statusDiv.textContent = "Menunggu pasangan anonim...";
+        statusDiv.textContent = "Ready to connect...";
       })
       .catch(err => {
         console.error('Error accessing media devices.', err);
+        statusDiv.textContent = 'Error accessing microphone';
       });
+
+    // Handle language change
+    languageSelect.addEventListener('change', (event) => {
+      selectedLanguage = event.target.value;
+    });
+
+    // Start call process
+    startButton.addEventListener('click', () => {
+      statusDiv.textContent = "Connecting...";
+      socket.send(JSON.stringify({
+        action: 'start_call',
+        language: selectedLanguage  // Send selected language with the request
+      }));
+    });
 
     socket.onmessage = (message) => {
       const data = JSON.parse(message.data);
-      if (data.sdp) {
-        handleSdp(data.sdp);
-      } else if (data.iceCandidate) {
-        handleIceCandidate(data.iceCandidate);
+
+      if (data.action === 'offer') {
+        handleOffer(data.sdp);
+      } else if (data.action === 'answer') {
+        handleAnswer(data.sdp);
+      } else if (data.action === 'ice_candidate') {
+        handleIceCandidate(data.candidate);
+      } else if (data.action === 'connected') {
+        statusDiv.textContent = 'Connected with partner!';
+      } else if (data.action === 'no_partner') {
+        statusDiv.textContent = 'No partner found. Try again later.';
       }
     };
 
-    // Mengirim pesan SDP (offer/answer) ke server WebSocket
     function sendSdp(sdp) {
-      socket.send(JSON.stringify({ sdp }));
+      socket.send(JSON.stringify({
+        action: 'sdp',
+        sdp: sdp,
+        language: selectedLanguage
+      }));
     }
 
-    // Menangani SDP (offer/answer)
-    function handleSdp(sdp) {
+    function handleOffer(sdp) {
       if (!peerConnection) {
         peerConnection = new RTCPeerConnection(iceServers);
         peerConnection.addStream(localStream);
         peerConnection.onaddstream = (event) => {
-          // Panggilan suara otomatis akan terjadi setelah koneksi
-          statusDiv.textContent = 'Panggilan suara sedang berlangsung...';
+          // Call connected
+          statusDiv.textContent = 'Panggilan suara berlangsung...';
         };
       }
 
-      if (sdp.type === 'offer') {
-        peerConnection.setRemoteDescription(new RTCSessionDescription(sdp));
-        peerConnection.createAnswer().then((answer) => {
-          peerConnection.setLocalDescription(answer);
-          sendSdp(answer);
-        });
-      } else if (sdp.type === 'answer') {
-        peerConnection.setRemoteDescription(new RTCSessionDescription(sdp));
-      }
+      peerConnection.setRemoteDescription(new RTCSessionDescription(sdp));
+      peerConnection.createAnswer().then((answer) => {
+        peerConnection.setLocalDescription(answer);
+        sendSdp(answer);
+      });
     }
 
-    // Menangani IceCandidate
+    function handleAnswer(sdp) {
+      peerConnection.setRemoteDescription(new RTCSessionDescription(sdp));
+    }
+
     function handleIceCandidate(candidate) {
       peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
     }
