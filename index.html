@@ -1,186 +1,188 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Anonymous Voice Call</title>
-  
-  <!-- Google Fonts for better typography -->
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-  
-  <!-- Font Awesome for icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  
+  <title>Panggilan Suara WebRTC dengan Bot Telegram</title>
   <style>
-    /* Global Reset */
+    /* Umum */
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-    }
-    body {
-      font-family: 'Roboto', sans-serif;
-      background: linear-gradient(135deg, #4CAF50, #81C784);
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      flex-direction: column;
-      animation: fadeIn 1s ease-in-out;
-      overflow: hidden;  /* Menambahkan overflow hidden untuk animasi parallax */
-      position: relative;
+      font-family: 'Arial', sans-serif;
     }
 
-    /* Background Parallax Effect */
-    .bg {
-      position: absolute;
-      top: 0;
-      left: 0;
+    /* Container utama */
+    .container {
       width: 100%;
-      height: 100%;
-      background-image: url('https://source.unsplash.com/1600x900/?nature'); /* Ganti dengan gambar latar belakang */
-      background-size: cover;
-      background-position: center;
-      z-index: -1;
-      transform: translateY(-50%); /* Parallax effect */
-      transition: transform 0.1s ease-in-out;
-    }
-
-    body:hover .bg {
-      transform: translateY(0);
-    }
-
-    @keyframes fadeIn {
-      0% { opacity: 0; }
-      100% { opacity: 1; }
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      animation: fadeIn 1.5s ease-out;
     }
 
     /* Header */
-    h1 {
-      font-size: 3em;
-      text-align: center;
-      margin-bottom: 20px;
-      font-weight: 500;
-    }
-
-    /* Call Section */
-    .call-container {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      background: rgba(0, 0, 0, 0.6);
-      border-radius: 10px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-      width: 100%;
-      max-width: 400px;
-      animation: scaleIn 0.6s ease-in-out;
-    }
-
-    select, button {
-      background: #fff;
-      color: #333;
-      border: none;
-      padding: 12px 25px;
-      font-size: 1.1em;
-      border-radius: 25px;
-      margin: 10px 0;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    select:hover, button:hover {
-      background: #4CAF50;
+    header {
+      background-color: #4CAF50;
+      padding: 15px;
+      border-radius: 10px 10px 0 0;
       color: #fff;
-      transform: scale(1.1);
+      animation: slideIn 1.5s ease-out;
     }
 
-    #status {
-      margin-top: 15px;
-      font-size: 1.2em;
-      color: #ccc;
+    header h1 {
+      font-size: 24px;
     }
 
-    /* Animations */
-    @keyframes scaleIn {
-      0% { transform: scale(0.8); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
+    /* Kontrol dan status */
+    .call-controls {
+      margin-top: 30px;
     }
 
-    /* End Call Button */
-    #endCall {
-      background-color: #F44336;
-      color: white;
-      font-size: 1.2em;
-      padding: 12px 25px;
-      border-radius: 25px;
+    #languageSelect {
+      margin-top: 10px;
+      padding: 8px;
+      width: 100%;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+      animation: slideIn 1.5s ease-out;
+    }
+
+    #statusDiv {
       margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      animation: fadeIn 2s ease-out;
+    }
+
+    /* Tombol */
+    .buttons {
+      margin-top: 30px;
+    }
+
+    .button {
+      padding: 12px 20px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
-      transition: transform 0.3s ease, background-color 0.3s ease;
+      margin: 10px;
+      width: 100%;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+
+    .button:hover {
+      background-color: #45a049;
+      transform: scale(1.05);
+    }
+
+    .button:active {
+      background-color: #388e3c;
+    }
+
+    button[style="display: none;"] {
       display: none;
     }
 
-    #endCall:hover {
-      background-color: #D32F2F;
-      transform: scale(1.1);
+    /* Footer */
+    footer {
+      margin-top: 40px;
+      font-size: 14px;
+      color: #888;
+    }
+
+    /* Animasi */
+    @keyframes fadeIn {
+      0% {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideIn {
+      0% {
+        transform: translateX(-100%);
+      }
+      100% {
+        transform: translateX(0);
+      }
+    }
+
+    /* Responsif untuk layar kecil */
+    @media screen and (max-width: 600px) {
+      .container {
+        padding: 10px;
+      }
+
+      header h1 {
+        font-size: 20px;
+      }
+
+      .button {
+        font-size: 14px;
+        padding: 10px 15px;
+      }
+
+      #languageSelect {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
-  <!-- Parallax Background -->
-  <div class="bg"></div>
+  <div class="container">
+    <header>
+      <h1>Panggilan Suara WebRTC dengan Bot Telegram</h1>
+    </header>
 
-  <h1>Anonymous Voice Call</h1>
+    <div class="call-controls">
+      <label for="languageSelect">Pilih Bahasa:</label>
+      <select id="languageSelect">
+        <option value="id">Bahasa Indonesia</option>
+        <option value="en">English</option>
+      </select>
 
-  <div class="call-container">
-    <label for="language">Choose your language:</label>
-    <select id="language">
-      <option value="en">English</option>
-      <option value="id">Indonesian</option>
-      <option value="es">Spanish</option>
-      <option value="ru">Russian</option>
-      <option value="hi">Hindi</option>
-    </select>
-    
-    <button id="startCall"><i class="fas fa-phone-alt"></i> Start Anonymous Call</button>
+      <div id="statusDiv">Status: Menunggu panggilan...</div>
 
-    <div id="status">Waiting for anonymous partner...</div>
-    <button id="endCall"><i class="fas fa-phone-slash"></i> End Call</button>
+      <div class="buttons">
+        <button id="startButton" class="button">Mulai Panggilan</button>
+        <button id="endButton" class="button" style="display: none;">Akhiri Panggilan</button>
+      </div>
+
+      <div class="buttons">
+        <button id="telegramBotButton" class="button">Hubungi Bot Telegram</button>
+      </div>
+    </div>
+
+    <footer>
+      <p>&copy; 2025 Panggilan WebRTC</p>
+    </footer>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
   <script>
-    const socket = new WebSocket('wss://your-websocket-server-url');  // URL WebSocket untuk signaling
-    const statusDiv = document.getElementById('status');
-    const languageSelect = document.getElementById('language');
-    const startButton = document.getElementById('startCall');
-    const endButton = document.getElementById('endCall');
+    let selectedLanguage = 'id';
+    const languageSelect = document.getElementById('languageSelect');
+    const startButton = document.getElementById('startButton');
+    const endButton = document.getElementById('endButton');
+    const statusDiv = document.getElementById('statusDiv');
+    const telegramBotButton = document.getElementById('telegramBotButton');
 
-    let localStream;
     let peerConnection;
-    const iceServers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
-
-    let selectedLanguage = 'en'; // Default language is English
-
-    // Inisialisasi media lokal (mikrofon)
-    navigator.mediaDevices.getUserMedia({
-      audio: {
-        noiseSuppression: true, // Mengaktifkan noise suppression
-        echoCancellation: true, // Mengaktifkan echo cancellation
-        highpassFilter: true,   // Menambahkan filter untuk suara rendah
-      },
-      video: false
-    })
-      .then(stream => {
-        localStream = stream;
-        statusDiv.textContent = "Ready to connect...";
-      })
-      .catch(err => {
-        console.error('Error accessing media devices.', err);
-        statusDiv.textContent = 'Error accessing microphone';
-      });
+    const iceServers = [{
+      urls: 'stun:stun.l.google.com:19302'
+    }];
 
     // Handle language change
     languageSelect.addEventListener('change', (event) => {
@@ -190,63 +192,47 @@
     // Start call process
     startButton.addEventListener('click', () => {
       statusDiv.textContent = "Connecting...";
-      socket.send(JSON.stringify({
-        action: 'start_call',
-        language: selectedLanguage  // Send selected language with the request
-      }));
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          // Add the audio stream to the peer connection
+          peerConnection = new RTCPeerConnection({ iceServers });
+
+          stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+
+          peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+              socket.send(JSON.stringify({
+                action: 'ice_candidate',
+                candidate: event.candidate
+              }));
+            }
+          };
+
+          peerConnection.ontrack = (event) => {
+            // Handle incoming audio stream
+            console.log("Received remote stream");
+          };
+
+          peerConnection.createOffer()
+            .then(offer => {
+              peerConnection.setLocalDescription(offer);
+              socket.send(JSON.stringify({
+                action: 'offer',
+                sdp: offer
+              }));
+            })
+            .catch(error => {
+              console.error("Error creating offer:", error);
+              statusDiv.textContent = 'Terjadi kesalahan saat membuat panggilan.';
+            });
+        })
+        .catch(error => {
+          console.error("Error getting media:", error);
+          statusDiv.textContent = 'Gagal mengakses mikrofon.';
+        });
     });
 
-    socket.onmessage = (message) => {
-      const data = JSON.parse(message.data);
-
-      if (data.action === 'offer') {
-        handleOffer(data.sdp);
-      } else if (data.action === 'answer') {
-        handleAnswer(data.sdp);
-      } else if (data.action === 'ice_candidate') {
-        handleIceCandidate(data.candidate);
-      } else if (data.action === 'connected') {
-        statusDiv.textContent = 'Connected with partner!';
-        endButton.style.display = 'inline-block'; // Tampilkan tombol End Call
-      } else if (data.action === 'no_partner') {
-        statusDiv.textContent = 'No partner found. Try again later.';
-      }
-    };
-
-    function sendSdp(sdp) {
-      socket.send(JSON.stringify({
-        action: 'sdp',
-        sdp: sdp,
-        language: selectedLanguage
-      }));
-    }
-
-    function handleOffer(sdp) {
-      if (!peerConnection) {
-        peerConnection = new RTCPeerConnection(iceServers);
-        peerConnection.addStream(localStream);
-        peerConnection.onaddstream = (event) => {
-          // Call connected
-          statusDiv.textContent = 'Panggilan suara berlangsung...';
-        };
-      }
-
-      peerConnection.setRemoteDescription(new RTCSessionDescription(sdp));
-      peerConnection.createAnswer().then((answer) => {
-        peerConnection.setLocalDescription(answer);
-        sendSdp(answer);
-      });
-    }
-
-    function handleAnswer(sdp) {
-      peerConnection.setRemoteDescription(new RTCSessionDescription(sdp));
-    }
-
-    function handleIceCandidate(candidate) {
-      peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-    }
-
-    // Menambahkan event listener untuk tombol End Call
+    // End the call
     endButton.addEventListener('click', () => {
       if (peerConnection) {
         peerConnection.close();
@@ -254,6 +240,11 @@
         statusDiv.textContent = 'Call Ended';
         endButton.style.display = 'none'; // Sembunyikan tombol End Call setelah panggilan berakhir
       }
+    });
+
+    // Open Telegram bot chat
+    telegramBotButton.addEventListener('click', () => {
+      window.open('https://t.me/YourBotUsername', '_blank');
     });
   </script>
 </body>
