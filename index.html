@@ -161,6 +161,12 @@
         <button id="endButton" class="button" style="display: none;">Akhiri Panggilan</button>
       </div>
 
+      <!-- Input Token Bot Telegram -->
+      <div class="buttons">
+        <input type="text" id="telegramToken" class="button" placeholder="Masukkan Token Bot Telegram">
+        <button id="connectTelegram" class="button">Hubungkan ke Bot Telegram</button>
+      </div>
+
       <div class="buttons">
         <button id="telegramBotButton" class="button">Hubungi Bot Telegram</button>
       </div>
@@ -178,6 +184,8 @@
     const endButton = document.getElementById('endButton');
     const statusDiv = document.getElementById('statusDiv');
     const telegramBotButton = document.getElementById('telegramBotButton');
+    const telegramTokenInput = document.getElementById('telegramToken');
+    const connectTelegramButton = document.getElementById('connectTelegram');
 
     let peerConnection;
     const iceServers = [{
@@ -194,7 +202,6 @@
       statusDiv.textContent = "Connecting...";
       navigator.mediaDevices.getUserMedia({ audio: true })
         .then(stream => {
-          // Add the audio stream to the peer connection
           peerConnection = new RTCPeerConnection({ iceServers });
 
           stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
@@ -209,7 +216,6 @@
           };
 
           peerConnection.ontrack = (event) => {
-            // Handle incoming audio stream
             console.log("Received remote stream");
           };
 
@@ -242,10 +248,38 @@
       }
     });
 
+    // Handle connecting bot with token
+    connectTelegramButton.addEventListener('click', () => {
+      const token = telegramTokenInput.value.trim();
+      if (token === "") {
+        alert("Token bot Telegram tidak boleh kosong.");
+        return;
+      }
+
+      // Contoh koneksi ke API Telegram untuk validasi token (tidak implementasi penuh)
+      fetch(`https://api.telegram.org/bot${token}/getMe`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.ok) {
+            alert("Token bot Telegram valid! Anda dapat menghubungi bot.");
+            telegramBotButton.style.display = 'inline-block'; // Tampilkan tombol untuk membuka bot
+          } else {
+            alert("Token bot Telegram tidak valid. Coba lagi.");
+          }
+        })
+        .catch(error => {
+          alert("Gagal menghubungi API Telegram. Periksa token dan coba lagi.");
+          console.error(error);
+        });
+    });
+
     // Open Telegram bot chat
     telegramBotButton.addEventListener('click', () => {
-      window.open('https://t.me/YourBotUsername', '_blank');
+      const token = telegramTokenInput.value.trim();
+      if (token !== "") {
+        window.open(`https://t.me/${token}`, '_blank');
+      } else {
+        alert("Masukkan token bot terlebih dahulu.");
+      }
     });
-  </script>
-</body>
-</html>
+  </script
