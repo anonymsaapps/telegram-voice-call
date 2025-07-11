@@ -3,194 +3,222 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat & Panggilan Suara WebRTC</title>
+  <title>Anonymous Chat - Satu Lawan Satu</title>
   <style>
-    /* Gaya umum */
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: 'Arial', sans-serif;
     }
-
-    /* Kontainer utama */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      padding: 20px;
+    }
     .container {
       width: 100%;
       max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: #f5f5f5;
+      background-color: #fff;
       border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      padding: 20px;
       text-align: center;
     }
-
     header {
       background-color: #4CAF50;
       padding: 15px;
       border-radius: 10px 10px 0 0;
-      color: #fff;
-    }
-
-    header h1 {
+      color: white;
       font-size: 24px;
     }
-
     .chat-box {
       margin-top: 20px;
       max-height: 300px;
       overflow-y: auto;
-      text-align: left;
-    }
-
-    .message {
-      padding: 8px 10px;
-      margin: 5px 0;
-      background-color: #e1f5e1;
-      border-radius: 5px;
-    }
-
-    .send-controls {
-      margin-top: 20px;
-    }
-
-    input[type="text"] {
-      width: 70%;
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 5px;
+      background-color: #f9f9f9;
+      padding: 15px;
+      border-radius: 10px;
       border: 1px solid #ddd;
     }
-
-    input[type="file"] {
-      padding: 10px;
-      margin-top: 10px;
+    .message {
+      padding: 8px 12px;
+      margin: 5px 0;
+      background-color: #e1f5e1;
+      border-radius: 10px;
+      display: inline-block;
+      max-width: 80%;
+      word-wrap: break-word;
     }
-
+    .message.partner {
+      background-color: #e1f5e6;
+      text-align: left;
+    }
+    .message.you {
+      background-color: #c8e6c9;
+      text-align: right;
+    }
+    .send-controls {
+      margin-top: 15px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      align-items: center;
+    }
+    input[type="text"] {
+      width: 60%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
     button {
       padding: 10px 20px;
       font-size: 16px;
       background-color: #4CAF50;
-      color: #fff;
+      color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      margin-top: 10px;
     }
-
-    button:hover {
-      background-color: #45a049;
-    }
-
-    /* Panggilan Suara */
-    #statusDiv {
-      margin-top: 20px;
-      font-size: 18px;
-      font-weight: bold;
-      color: #333;
-    }
-
-    #endButton {
-      margin-top: 20px;
+    input[type="file"] {
       display: none;
     }
-
-    /* Responsif */
-    @media screen and (max-width: 600px) {
-      .container {
-        padding: 10px;
-      }
-
-      header h1 {
-        font-size: 20px;
-      }
-
-      input[type="text"] {
-        width: 60%;
-      }
+    #statusDiv {
+      margin-top: 15px;
+      font-size: 18px;
+      color: #555;
+    }
+    .call-buttons {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+    }
+    .call-buttons button {
+      background-color: #2196F3;
+    }
+    .end-call {
+      background-color: #f44336;
     }
   </style>
 </head>
 <body>
+
   <div class="container">
     <header>
-      <h1>Chat & Panggilan Suara WebRTC</h1>
+      Anonymous Chat One-on-One
     </header>
 
     <div class="chat-box" id="chatBox"></div>
 
     <div class="send-controls">
-      <input type="text" id="messageInput" placeholder="Ketik pesan...">
+      <input type="text" id="messageInput" placeholder="Tulis pesan...">
       <button id="sendMessageButton">Kirim Pesan</button>
-      
+    </div>
+
+    <div class="send-controls">
       <input type="file" id="fileInput" accept="image/*">
       <button id="sendImageButton">Kirim Gambar</button>
     </div>
 
     <div id="statusDiv">Status: Menunggu panggilan...</div>
 
-    <button id="startButton">Mulai Panggilan Suara</button>
-    <button id="endButton">Akhiri Panggilan</button>
-
-    <footer>
-      <p>&copy; 2025 Panggilan WebRTC & Chat</p>
-    </footer>
+    <div class="call-buttons">
+      <button id="startButton">Mulai Panggilan Suara</button>
+      <button id="endButton" class="end-call" style="display:none;">Akhiri Panggilan</button>
+    </div>
   </div>
 
   <script>
-    let selectedLanguage = 'id';
+    const socket = new WebSocket('ws://localhost:8080');
     const messageInput = document.getElementById('messageInput');
     const sendMessageButton = document.getElementById('sendMessageButton');
     const sendImageButton = document.getElementById('sendImageButton');
-    const fileInput = document.getElementById('fileInput');
     const chatBox = document.getElementById('chatBox');
     const startButton = document.getElementById('startButton');
     const endButton = document.getElementById('endButton');
     const statusDiv = document.getElementById('statusDiv');
+    const fileInput = document.getElementById('fileInput');
 
     let peerConnection;
-    const iceServers = [{
-      urls: 'stun:stun.l.google.com:19302'
-    }];
+    const iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
     let localStream;
 
-    // Handle sending message
+    // WebSocket Client
+    socket.onopen = () => {
+      console.log("Connected to WebSocket server.");
+    };
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.action === 'message') {
+        appendMessage('Partner: ' + data.message, 'partner');
+      } else if (data.action === 'offer') {
+        handleOffer(data.sdp);
+      } else if (data.action === 'answer') {
+        handleAnswer(data.sdp);
+      } else if (data.action === 'ice_candidate') {
+        handleIceCandidate(data.candidate);
+      } else if (data.action === 'image') {
+        appendImage('Partner', data.image);
+      }
+    };
+
+    // Function to Append Message to Chat Box
+    function appendMessage(message, sender) {
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add('message');
+      messageDiv.classList.add(sender === 'partner' ? 'partner' : 'you');
+      messageDiv.innerText = message;
+      chatBox.appendChild(messageDiv);
+      chatBox.scrollTop = chatBox.scrollHeight; // Auto scroll to bottom
+    }
+
+    // Function to Append Image to Chat Box
+    function appendImage(sender, imageSrc) {
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add('message');
+      messageDiv.classList.add(sender === 'partner' ? 'partner' : 'you');
+      const img = document.createElement('img');
+      img.src = imageSrc;
+      img.style.maxWidth = '100%';
+      messageDiv.appendChild(img);
+      chatBox.appendChild(messageDiv);
+      chatBox.scrollTop = chatBox.scrollHeight; // Auto scroll to bottom
+    }
+
+    // Send Text Message
     sendMessageButton.addEventListener('click', () => {
       const message = messageInput.value.trim();
       if (message) {
-        appendMessage('You: ' + message);
-        // Send message via socket (simulated here)
-        // socket.send(message);
+        appendMessage('You: ' + message, 'you');
+        socket.send(JSON.stringify({ action: 'message', message: message }));
         messageInput.value = ''; // Clear input
       }
     });
 
-    // Handle sending image
+    // Send Image
     sendImageButton.addEventListener('click', () => {
       const file = fileInput.files[0];
       if (file) {
         const reader = new FileReader();
         reader.onloadend = () => {
           const imageSrc = reader.result;
-          appendMessage('You sent an image');
-          // You could send this image via WebSocket or another method.
+          socket.send(JSON.stringify({ action: 'image', image: imageSrc }));
+          appendMessage('You sent an image', 'you');
         };
         reader.readAsDataURL(file);
       }
     });
 
-    // Append message to chat box
-    function appendMessage(message) {
-      const messageDiv = document.createElement('div');
-      messageDiv.classList.add('message');
-      messageDiv.textContent = message;
-      chatBox.appendChild(messageDiv);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    // Start call
+    // Handle WebRTC - Start Audio Call
     startButton.addEventListener('click', () => {
-      statusDiv.textContent = 'Connecting...';
+      statusDiv.textContent = "Connecting...";
       navigator.mediaDevices.getUserMedia({ audio: true })
         .then(stream => {
           localStream = stream;
@@ -198,20 +226,16 @@
 
           stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
 
-          peerConnection.onicecandidate = event => {
+          peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
-              // Send ICE candidates to the other peer
+              socket.send(JSON.stringify({ action: 'ice_candidate', candidate: event.candidate }));
             }
-          };
-
-          peerConnection.ontrack = event => {
-            // Handle remote audio stream (if needed)
           };
 
           peerConnection.createOffer()
             .then(offer => {
               peerConnection.setLocalDescription(offer);
-              // Send the offer via WebSocket
+              socket.send(JSON.stringify({ action: 'offer', sdp: offer }));
             })
             .catch(error => {
               console.error('Error creating offer: ', error);
@@ -224,263 +248,37 @@
         });
     });
 
-    // End call
+    // End Call
     endButton.addEventListener('click', () => {
       if (peerConnection) {
         peerConnection.close();
         peerConnection = null;
-        statusDiv.textContent = 'Call Ended';
-        endButton.style.display = 'none';
+        statusDiv.textContent = "Panggilan selesai.";
+        endButton.style.display = "none";
+        startButton.style.display = "block";
       }
     });
 
-    // Simulate receiving a message (For demo purposes)
-    setTimeout(() => {
-      appendMessage('Partner: Hello, how are you?');
-    }, 3000);
-  </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat & Panggilan Suara WebRTC</title>
-  <style>
-    /* Gaya umum */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Arial', sans-serif;
-    }
-
-    /* Kontainer utama */
-    .container {
-      width: 100%;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: #f5f5f5;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      text-align: center;
-    }
-
-    header {
-      background-color: #4CAF50;
-      padding: 15px;
-      border-radius: 10px 10px 0 0;
-      color: #fff;
-    }
-
-    header h1 {
-      font-size: 24px;
-    }
-
-    .chat-box {
-      margin-top: 20px;
-      max-height: 300px;
-      overflow-y: auto;
-      text-align: left;
-    }
-
-    .message {
-      padding: 8px 10px;
-      margin: 5px 0;
-      background-color: #e1f5e1;
-      border-radius: 5px;
-    }
-
-    .send-controls {
-      margin-top: 20px;
-    }
-
-    input[type="text"] {
-      width: 70%;
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 5px;
-      border: 1px solid #ddd;
-    }
-
-    input[type="file"] {
-      padding: 10px;
-      margin-top: 10px;
-    }
-
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: #4CAF50;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-
-    button:hover {
-      background-color: #45a049;
-    }
-
-    /* Panggilan Suara */
-    #statusDiv {
-      margin-top: 20px;
-      font-size: 18px;
-      font-weight: bold;
-      color: #333;
-    }
-
-    #endButton {
-      margin-top: 20px;
-      display: none;
-    }
-
-    /* Responsif */
-    @media screen and (max-width: 600px) {
-      .container {
-        padding: 10px;
-      }
-
-      header h1 {
-        font-size: 20px;
-      }
-
-      input[type="text"] {
-        width: 60%;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <h1>Chat & Panggilan Suara WebRTC</h1>
-    </header>
-
-    <div class="chat-box" id="chatBox"></div>
-
-    <div class="send-controls">
-      <input type="text" id="messageInput" placeholder="Ketik pesan...">
-      <button id="sendMessageButton">Kirim Pesan</button>
-      
-      <input type="file" id="fileInput" accept="image/*">
-      <button id="sendImageButton">Kirim Gambar</button>
-    </div>
-
-    <div id="statusDiv">Status: Menunggu panggilan...</div>
-
-    <button id="startButton">Mulai Panggilan Suara</button>
-    <button id="endButton">Akhiri Panggilan</button>
-
-    <footer>
-      <p>&copy; 2025 Panggilan WebRTC & Chat</p>
-    </footer>
-  </div>
-
-  <script>
-    let selectedLanguage = 'id';
-    const messageInput = document.getElementById('messageInput');
-    const sendMessageButton = document.getElementById('sendMessageButton');
-    const sendImageButton = document.getElementById('sendImageButton');
-    const fileInput = document.getElementById('fileInput');
-    const chatBox = document.getElementById('chatBox');
-    const startButton = document.getElementById('startButton');
-    const endButton = document.getElementById('endButton');
-    const statusDiv = document.getElementById('statusDiv');
-
-    let peerConnection;
-    const iceServers = [{
-      urls: 'stun:stun.l.google.com:19302'
-    }];
-    let localStream;
-
-    // Handle sending message
-    sendMessageButton.addEventListener('click', () => {
-      const message = messageInput.value.trim();
-      if (message) {
-        appendMessage('You: ' + message);
-        // Send message via socket (simulated here)
-        // socket.send(message);
-        messageInput.value = ''; // Clear input
-      }
-    });
-
-    // Handle sending image
-    sendImageButton.addEventListener('click', () => {
-      const file = fileInput.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const imageSrc = reader.result;
-          appendMessage('You sent an image');
-          // You could send this image via WebSocket or another method.
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-
-    // Append message to chat box
-    function appendMessage(message) {
-      const messageDiv = document.createElement('div');
-      messageDiv.classList.add('message');
-      messageDiv.textContent = message;
-      chatBox.appendChild(messageDiv);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    // Start call
-    startButton.addEventListener('click', () => {
-      statusDiv.textContent = 'Connecting...';
-      navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(stream => {
-          localStream = stream;
-          peerConnection = new RTCPeerConnection({ iceServers });
-
-          stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-
-          peerConnection.onicecandidate = event => {
-            if (event.candidate) {
-              // Send ICE candidates to the other peer
-            }
-          };
-
-          peerConnection.ontrack = event => {
-            // Handle remote audio stream (if needed)
-          };
-
-          peerConnection.createOffer()
-            .then(offer => {
-              peerConnection.setLocalDescription(offer);
-              // Send the offer via WebSocket
-            })
-            .catch(error => {
-              console.error('Error creating offer: ', error);
-              statusDiv.textContent = 'Error starting call.';
-            });
-        })
-        .catch(error => {
-          console.error('Error accessing media devices: ', error);
-          statusDiv.textContent = 'Error accessing microphone.';
+    // Handling Offer
+    function handleOffer(sdp) {
+      peerConnection.setRemoteDescription(new RTCSessionDescription(sdp))
+        .then(() => peerConnection.createAnswer())
+        .then(answer => {
+          peerConnection.setLocalDescription(answer);
+          socket.send(JSON.stringify({ action: 'answer', sdp: answer }));
         });
-    });
+    }
 
-    // End call
-    endButton.addEventListener('click', () => {
-      if (peerConnection) {
-        peerConnection.close();
-        peerConnection = null;
-        statusDiv.textContent = 'Call Ended';
-        endButton.style.display = 'none';
-      }
-    });
+    // Handling Answer
+    function handleAnswer(sdp) {
+      peerConnection.setRemoteDescription(new RTCSessionDescription(sdp));
+    }
 
-    // Simulate receiving a message (For demo purposes)
-    setTimeout(() => {
-      appendMessage('Partner: Hello, how are you?');
-    }, 3000);
+    // Handling ICE Candidate
+    function handleIceCandidate(candidate) {
+      peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+    }
   </script>
+
 </body>
 </html>
